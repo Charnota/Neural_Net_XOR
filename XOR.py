@@ -25,18 +25,31 @@ class Layer:
         self.activate_s()
         pass
 ############
+#
+def inp_layer_f(x):
+    return x
+#
+def inp_layer_f_point(x):
+    return 0
+#
+class Input_layer(Layer):
+    def __init__(self, input_num):
+        super().__init__(input_num, input_num, inp_layer_f, inp_layer_f_point)
+        self.weights = np.eye(input_num)        
+#
 class NN:
     #init takes array of neuron nums d[0] = num_of_in_x, d[1] = neuron num of first hidden Layer...!!!
     #razmernost f menee d na 1 i soderzhit f[0] = activ fun nulevogo slouy
     def __init__(self, d, f, f_p):
         self.d = d
-        self.layer = []
+        self.layer = [Input_layer(d[0])]
+        #making of input layer
         for i in range(len(d)-1):
             self.layer.append(Layer(d[i],d[i+1],f[i], f_p[i]))
             
         pass
     def get_y(self):
-        return self.layer[len(self.d)-2].o
+        return self.layer[len(self.d)-1].o
         pass
     def get_w(self):
         n = 0
@@ -51,22 +64,24 @@ class NN:
             in_x = i.o
         return in_x
         pass
-    def learn(self, lr, epochs, x_arr, y_target_vector):
+    def learn(self, lr, epochs, x_arr, target_bras_arr):
         for e in range(epochs):
             for i in range(x_arr.shape[0]):
                 bra_x = np.array(x_arr[i], ndmin = 2)
-                E = y_target_vector[:,i] - self.make_calculation(bra_x)
+                E = target_bras_arr[i,:] - self.make_calculation(bra_x)
                 m = len(self.layer)
                 self.layer[m-1].bra_delta = np.array(E*self.layer[m-1].activate_s_point(),ndmin =2)
                 self.layer[m-1].weights += lr*self.layer[m-2].o.transpose().dot(self.layer[m-1].bra_delta)
-                for j in range(m-1):
+                for j in range(m-2):
                     ind = m-j-2
-                    if ind==0:
-                        self.layer[ind].bra_delta = self.layer[ind].activate_s_point()*self.layer[ind+1].bra_delta.dot(self.layer[ind+1].weights.transpose())
-                        self.layer[ind].weights += lr*bra_x.transpose().dot(self.layer[ind].bra_delta)
-                    else:
-                        self.layer[ind].bra_delta = self.layer[ind].activate_s_point()*self.layer[ind+1].bra_delta.dot(self.layer[ind+1].weights.transpose())
-                        self.layer[ind].weights += lr*self.layer[ind-1].o.transpose().dot(self.layer[ind].bra_delta)
+                    self.layer[ind].bra_delta = self.layer[ind].activate_s_point()*self.layer[ind+1].bra_delta.dot(self.layer[ind+1].weights.transpose())
+                    self.layer[ind].weights += lr*self.layer[ind-1].o.transpose().dot(self.layer[ind].bra_delta)
+#                     if ind==0:
+#                         self.layer[ind].bra_delta = self.layer[ind].activate_s_point()*self.layer[ind+1].bra_delta.dot(self.layer[ind+1].weights.transpose())
+#                         self.layer[ind].weights += lr*bra_x.transpose().dot(self.layer[ind].bra_delta)
+#                     else:
+#                         self.layer[ind].bra_delta = self.layer[ind].activate_s_point()*self.layer[ind+1].bra_delta.dot(self.layer[ind+1].weights.transpose())
+#                         self.layer[ind].weights += lr*self.layer[ind-1].o.transpose().dot(self.layer[ind].bra_delta)
                     pass
                 
                     
@@ -98,9 +113,9 @@ for i in range(len(str_list_data)):
   data_arr[i] = str_list_data[i].split(',')
   
 x_arr = np.array(data_arr[:, 0:2])
-bra_y = np.array(data_arr[:, 2], ndmin = 2)
+bra_y = np.array(data_arr[:, 2], ndmin = 2).T
 epochs = 5000
-lr = 0.5
+lr = 0.1
 
 d = [2,2,1]
 f = [sigmoidal, heaviside]
